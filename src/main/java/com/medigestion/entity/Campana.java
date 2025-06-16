@@ -53,6 +53,7 @@ public class Campana {
     @OneToMany(mappedBy = "campana", cascade = CascadeType.ALL)
     private List<AccionCampana> acciones = new ArrayList<>();
     
+    @Column(name = "tipo_campana", nullable = false)
     private String tipo;
     private String tipoPromocion;
     private String grupoObjetivo;

@@ -32,6 +32,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+@Transactional
 class CampanaControllerIntegrationTest {
     private static final Logger logger = LoggerFactory.getLogger(CampanaControllerIntegrationTest.class);
     
@@ -56,8 +58,14 @@ class CampanaControllerIntegrationTest {
     private Empleado coordinador;
 
     @BeforeEach
+    @Transactional
     void setUp() {
+        // Limpiar todas las tablas relacionadas
         campanaRepository.deleteAll();
+        entityManager.createQuery("DELETE FROM Doctor").executeUpdate();
+        entityManager.createQuery("DELETE FROM Empleado").executeUpdate();
+        entityManager.createQuery("DELETE FROM Empresa").executeUpdate();
+        entityManager.flush();
         
         // Crear y persistir empresa
         empresa = new Empresa();
@@ -67,6 +75,7 @@ class CampanaControllerIntegrationTest {
         empresa.setTelefono("1234567");
         empresa.setEmail("empresa@test.com");
         entityManager.persist(empresa);
+        
         // Crear y persistir doctor
         doctor = new Doctor();
         doctor.setNombre("Juan");
@@ -74,6 +83,7 @@ class CampanaControllerIntegrationTest {
         doctor.setLicencia("MED123");
         doctor.setEspecialidad("General");
         entityManager.persist(doctor);
+        
         // Crear y persistir coordinador
         coordinador = new Empleado();
         coordinador.setNombre("Ana");
@@ -83,6 +93,7 @@ class CampanaControllerIntegrationTest {
         coordinador.setTelefono("3001234567");
         coordinador.setEmpresa(empresa);
         entityManager.persist(coordinador);
+        
         // Crear campaña y asignar relaciones obligatorias
         campana = new Campana();
         campana.setNombre("Campaña de Integración");
@@ -198,7 +209,7 @@ class CampanaControllerIntegrationTest {
 
     @Test
     void iniciarCampana_DeberiaIniciarCampanaPendiente() throws Exception {
-        mockMvc.perform(post("/api/campanas/{id}/iniciar", campana.getId()))
+        mockMvc.perform(put("/api/campanas/{id}/iniciar", campana.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value(EstadoCampana.ACTIVA.toString()));
     }
@@ -209,14 +220,14 @@ class CampanaControllerIntegrationTest {
         campana.setEstado(EstadoCampana.ACTIVA);
         campanaRepository.save(campana);
 
-        mockMvc.perform(post("/api/campanas/{id}/finalizar", campana.getId()))
+        mockMvc.perform(put("/api/campanas/{id}/finalizar", campana.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value(EstadoCampana.FINALIZADA.toString()));
     }
 
     @Test
     void cancelarCampana_DeberiaCancelarCampana() throws Exception {
-        mockMvc.perform(post("/api/campanas/{id}/cancelar", campana.getId()))
+        mockMvc.perform(put("/api/campanas/{id}/cancelar", campana.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value(EstadoCampana.CANCELADA.toString()));
     }
