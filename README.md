@@ -24,28 +24,18 @@ Este módulo forma parte del sistema MediGestion IPS y se encarga de la gestión
 
 faltan endpoints 
 
-## Estructura del Proyecto
-
-El proyecto sigue una arquitectura en capas:
-- **Entity**: Modelos de dominio
-- **DAO**: Acceso a datos
-- **Service**: Lógica de negocio
-- **Controller**: Endpoints REST
-- **Observer**: Patrón observer para notificaciones
-- **Factory**: Patrón factory para creación de objetos
-
 ## Patrones de Diseño Implementados
 
-Singleton - CacheSingleton.java (ya tenía comentarios)
-Constructor - Campana.java - Constructores para crear instancias
-Adaptador - CampanaMapper.java - Convierte entidades a DTOs
-Decorador - Anotaciones Jackson en entidades y DTOs
-Proxy - CampanaService.java - Cache transparente
-Observador - ExamenCampana.java - Callbacks JPA
-Estrategia - CampanaService.java - Diferentes estrategias de cache
-Método Plantilla - CampanaMapper.java - Algoritmo de mapeo
-Patrón Estado - Estados de campana
-Patron Comando - Operaciones auditadas 
+- **Singleton** - CacheSingleton.java (ya tenía comentarios)
+- **Constructor** - Campana.java - Constructores para crear instancias
+- **Adaptador** - CampanaMapper.java - Convierte entidades a DTOs
+- **Decorador** - Anotaciones Jackson en entidades y DTOs
+- **Proxy** - CampanaService.java - Cache transparente
+- **Observador** - ExamenCampana.java - Callbacks JPA
+- **Estrategia** - CampanaService.java - Diferentes estrategias de cache
+- **Método Plantilla** - CampanaMapper.java - Algoritmo de mapeo
+- **Patrón Estado** - Estados de campana
+- **Patron Comando** - Operaciones auditadas 
 
 
 ## Configuracion 
