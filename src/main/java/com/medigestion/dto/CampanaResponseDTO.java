@@ -2,7 +2,9 @@ package com.medigestion.dto;
 
 import com.medigestion.entity.EstadoCampana;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class CampanaResponseDTO {
@@ -13,11 +15,18 @@ public class CampanaResponseDTO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaInicio;
     
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonProperty("fecha_fin")
     private LocalDate fechaFin;
+    
+    @JsonProperty("fecha_creacion")
+    private LocalDateTime fechaCreacion;
+    
+    @JsonProperty("fecha_modificacion")
+    private LocalDateTime fechaModificacion;
     
     private EstadoCampana estado;
     private String tipo;
+    private String tipoCampana;
     private String tipoPromocion;
     private String grupoObjetivo;
     private String tema;
@@ -72,6 +81,22 @@ public class CampanaResponseDTO {
         this.fechaFin = fechaFin;
     }
 
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+
+    public LocalDateTime getFechaModificacion() {
+        return fechaModificacion;
+    }
+
+    public void setFechaModificacion(LocalDateTime fechaModificacion) {
+        this.fechaModificacion = fechaModificacion;
+    }
+
     public EstadoCampana getEstado() {
         return estado;
     }
@@ -86,6 +111,14 @@ public class CampanaResponseDTO {
 
     public void setTipo(String tipo) {
         this.tipo = tipo;
+    }
+
+    public String getTipoCampana() {
+        return tipoCampana;
+    }
+
+    public void setTipoCampana(String tipoCampana) {
+        this.tipoCampana = tipoCampana;
     }
 
     public String getTipoPromocion() {

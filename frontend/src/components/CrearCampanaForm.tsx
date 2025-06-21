@@ -8,6 +8,8 @@ import ScienceIcon from '@mui/icons-material/Science';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import GroupIcon from '@mui/icons-material/Group';
 import TopicIcon from '@mui/icons-material/Topic';
+import axios from 'axios';
+import Alert from '@mui/material/Alert';
 
 const tiposExamen = [
   { value: '', label: 'Ninguno' },
@@ -45,16 +47,52 @@ const CrearCampanaForm: React.FC = () => {
     tipoPromocion: '',
     grupoObjetivo: '',
     tema: '',
+    estado: 'PENDIENTE',
   });
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  // definen el estado inicial del formulario para crear una campaña,
+  // así como los estados para manejar mensajes de éxito, error y el estado de carga (loading).
+  // También se define la función handleChange, que actualiza el estado del formulario cada vez
+  // que el usuario modifica un campo de entrada.
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // POST
-    console.log(form);
+    setSuccess(null);
+    setError(null);
+    setLoading(true);
+    try {
+      // Enviar 'tema' como 'tipoCampana' en el POST
+      const dataToSend = { ...form, tipo: form.tema };
+      const response = await axios.post('http://localhost:8081/api/campanas', dataToSend, {
+        timeout: 10000
+      });
+      setSuccess('¡Campaña creada exitosamente!');
+      setForm({
+        nombre: '',
+        descripcion: '',
+        fechaInicio: '',
+        fechaFin: '',
+        tipoExamen: '',
+        tipoPromocion: '',
+        grupoObjetivo: '',
+        tema: '',
+        estado: 'PENDIENTE',
+      });
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || 'Error al crear la campaña');
+      } else {
+        setError('Error desconocido');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -67,6 +105,8 @@ const CrearCampanaForm: React.FC = () => {
       </Box>
       <Divider sx={{ mb: 3 }} />
       <Box component="form" display="flex" flexDirection="column" gap={3} onSubmit={handleSubmit}>
+        {success && <Alert severity="success">{success}</Alert>}
+        {error && <Alert severity="error">{error}</Alert>}
         <TextField
           label="Nombre de campaña"
           name="nombre"
@@ -211,8 +251,9 @@ const CrearCampanaForm: React.FC = () => {
           size="large"
           sx={{ mt: 2, borderRadius: 3, fontWeight: 600, letterSpacing: 1 }}
           startIcon={<CampaignIcon />}
+          disabled={loading}
         >
-          Guardar
+          {loading ? 'Guardando...' : 'Guardar'}
         </Button>
       </Box>
     </Paper>

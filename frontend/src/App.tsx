@@ -1,77 +1,42 @@
-import React, { useState } from 'react';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import ResultsView from './components/ResultsView';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import Header from './components/Header';
 import CrearCampanaForm from './components/CrearCampanaForm';
+import ResultsView from './components/ResultsView';
+import CampanaStateManager from './components/CampanaStateManager';
+import CampanaEditor from './components/CampanaEditor';
+import CommandHistory from './components/CommandHistory';
+import './App.css';
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
     primary: {
-      main: '#223354', // Azul oscuro sobrio
+      main: '#1976d2',
     },
     secondary: {
-      main: '#6c757d', // Gris sobrio
-    },
-    background: {
-      default: '#f4f6f8', // Gris claro
-      paper: '#ffffff',
-    },
-    text: {
-      primary: '#222b45',
-      secondary: '#6c757d',
-    },
-  },
-  shape: {
-    borderRadius: 16,
-  },
-  typography: {
-    fontFamily: 'Segoe UI, Roboto, Arial, sans-serif',
-    h5: {
-      fontWeight: 700,
-      letterSpacing: 0.5,
-    },
-    h4: {
-      fontWeight: 700,
-      letterSpacing: 0.5,
-    },
-  },
-  components: {
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 4px 24px 0 rgba(34,51,84,0.08)',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          textTransform: 'none',
-          fontWeight: 600,
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          background: '#f8fafc',
-          borderRadius: 8,
-        },
-      },
+      main: '#dc004e',
     },
   },
 });
 
 function App() {
-  const [view, setView] = useState<'inicio' | 'crear'>('inicio');
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Header onSelect={setView} selected={view} />
-      {view === 'inicio' ? <ResultsView /> : <CrearCampanaForm />}
+      <Router>
+        <div className="App">
+          <Header />
+          <Routes>
+            <Route path="/" element={<CrearCampanaForm />} />
+            <Route path="/campanas" element={<ResultsView />} />
+            <Route path="/estados" element={<CampanaStateManager />} />
+            <Route path="/editor" element={<CampanaEditor />} />
+            <Route path="/historial" element={<CommandHistory />} />
+          </Routes>
+        </div>
+      </Router>
     </ThemeProvider>
   );
 }

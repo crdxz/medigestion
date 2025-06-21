@@ -26,11 +26,15 @@ public class ExamenCampana {
     @Column(name = "fecha_actualizacion")
     private LocalDate fechaActualizacion;
     
+    // PATRÓN OBSERVADOR: Callbacks JPA que observan eventos de persistencia
+    // Se ejecutan automáticamente antes de persistir la entidad
     @PrePersist
     protected void onCreate() {
         fechaCreacion = LocalDate.now();
     }
     
+    // PATRÓN OBSERVADOR: Callback que observa eventos de actualización
+    // Se ejecuta automáticamente antes de actualizar la entidad
     @PreUpdate
     protected void onUpdate() {
         fechaActualizacion = LocalDate.now();
@@ -95,10 +99,6 @@ public class ExamenCampana {
     
     public void setTipoExamen(String nombre) {
         this.nombre = nombre;
-    }
-    
-    public void setCantidadEstimada(Integer cantidad) {
-        // Método de compatibilidad, no hace nada porque el campo fue eliminado.
     }
     
     @Override

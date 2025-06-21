@@ -73,12 +73,7 @@ const ResultsView: React.FC = () => {
     const fetchCampanas = async () => {
       try {
         const response = await axios.get('http://localhost:8081/api/campanas', {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },
-          withCredentials: true,
-          timeout: 5000
+          timeout: 10000
         });
         setCampanas(response.data);
         setLoading(false);

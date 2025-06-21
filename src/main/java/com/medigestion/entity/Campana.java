@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -60,14 +61,30 @@ public class Campana {
     private String tema;
     private String tipoExamen;
     
-    // Constructores
-    public Campana() {}
+    @Column(name = "fecha_creacion")
+    private LocalDateTime fechaCreacion;
     
+    @Column(name = "fecha_modificacion")
+    private LocalDateTime fechaModificacion;
+    
+    // PATRÓN CONSTRUCTOR: Constructores para crear instancias de Campana
+    // Constructor por defecto requerido por JPA
+    public Campana() {
+        // PATRÓN OBSERVER: Callback antes de persistir
+        this.fechaCreacion = LocalDateTime.now();
+        this.fechaModificacion = LocalDateTime.now();
+    }
+    
+    // PATRÓN CONSTRUCTOR: Constructor con parámetros esenciales
+    // Permite crear campañas con datos mínimos requeridos
     public Campana(String nombre, String descripcion, LocalDate fechaInicio, LocalDate fechaFin) {
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
+        this.estado = EstadoCampana.PENDIENTE; // Estado por defecto
+        this.fechaCreacion = LocalDateTime.now();
+        this.fechaModificacion = LocalDateTime.now();
     }
     
     // Getters y Setters
@@ -218,6 +235,31 @@ public class Campana {
     
     public void setTipoExamen(String tipoExamen) {
         this.tipoExamen = tipoExamen;
+    }
+    
+    @JsonProperty("tipoCampana")
+    public String getTipoCampana() {
+        return tipo;
+    }
+    
+    public void setTipoCampana(String tipoCampana) {
+        this.tipo = tipoCampana;
+    }
+    
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
+    }
+    
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
+    }
+    
+    public LocalDateTime getFechaModificacion() {
+        return fechaModificacion;
+    }
+    
+    public void setFechaModificacion(LocalDateTime fechaModificacion) {
+        this.fechaModificacion = fechaModificacion;
     }
     
     // Métodos de ayuda

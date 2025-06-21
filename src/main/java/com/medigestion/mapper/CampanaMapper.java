@@ -6,10 +6,27 @@ import org.springframework.stereotype.Component;
 import java.util.stream.Collectors;
 import java.util.List;
 
+/**
+ * Mapper para convertir entre entidades y DTOs
+ * 
+ * PATRÓN ADAPTADOR IMPLEMENTADO:
+ * - Funcionalidad: Adapta entidades JPA a DTOs para la API
+ * - Características: Convierte entre diferentes representaciones de datos
+ * - Beneficios: Separación entre capa de datos y presentación
+ * 
+ * PATRÓN MÉTODO PLANTILLA IMPLEMENTADO:
+ * - Funcionalidad: Define algoritmo de mapeo con pasos específicos
+ * - Características: toDTO() define la plantilla, métodos privados implementan detalles
+ * - Beneficios: Reutilización de lógica de mapeo, fácil extensión
+ */
 @Component
 public class CampanaMapper {
     
-    public CampanaResponseDTO toDTO(Campana campana) {
+    /**
+     * PATRÓN ADAPTER: Convierte entidad Campana a DTO de respuesta
+     * PATRÓN TEMPLATE METHOD: Estructura de mapeo definida
+     */
+    public CampanaResponseDTO toResponseDTO(Campana campana) {
         if (campana == null) {
             return null;
         }
@@ -21,62 +38,31 @@ public class CampanaMapper {
         dto.setFechaInicio(campana.getFechaInicio());
         dto.setFechaFin(campana.getFechaFin());
         dto.setEstado(campana.getEstado());
-        dto.setTipo(campana.getTipo() != null ? campana.getTipo() : "");
-        dto.setTipoPromocion(campana.getTipoPromocion() != null ? campana.getTipoPromocion() : "");
-        dto.setGrupoObjetivo(campana.getGrupoObjetivo() != null ? campana.getGrupoObjetivo() : "");
-        dto.setTema(campana.getTema() != null ? campana.getTema() : "");
-        dto.setTipoExamen(campana.getTipoExamen() != null ? campana.getTipoExamen() : "");
-        
-        // Mapear relaciones
-        if (campana.getDoctor() != null) {
-            dto.setDoctor(toDoctorDTO(campana.getDoctor()));
-        }
-        
-        if (campana.getEmpresa() != null) {
-            dto.setEmpresa(toEmpresaDTO(campana.getEmpresa()));
-        }
-        
-        if (campana.getCoordinador() != null) {
-            dto.setCoordinador(toEmpleadoDTO(campana.getCoordinador()));
-        }
-        
-        // Mapear listas
-        if (campana.getExamenes() != null) {
-            dto.setExamenes(campana.getExamenes().stream()
-                .map(this::toExamenCampanaDTO)
-                .collect(Collectors.toList()));
-        } else {
-            dto.setExamenes(List.of());
-        }
-        
-        if (campana.getResultados() != null) {
-            dto.setResultados(campana.getResultados().stream()
-                .map(this::toResultadoCampanaDTO)
-                .collect(Collectors.toList()));
-        } else {
-            dto.setResultados(List.of());
-        }
-        
-        if (campana.getAcciones() != null) {
-            dto.setAcciones(campana.getAcciones().stream()
-                .map(this::toAccionCampanaDTO)
-                .collect(Collectors.toList()));
-        } else {
-            dto.setAcciones(List.of());
-        }
+        dto.setTipoCampana(campana.getTipoCampana());
+        dto.setTema(campana.getTema());
+        dto.setTipoExamen(campana.getTipoExamen());
+        dto.setFechaCreacion(campana.getFechaCreacion());
+        dto.setFechaModificacion(campana.getFechaModificacion());
         
         return dto;
     }
     
+    /**
+     * PATRÓN ADAPTADOR: Convierte lista de entidades a lista de DTOs
+     */
     public List<CampanaResponseDTO> toDTOList(List<Campana> campanas) {
         if (campanas == null) {
             return List.of();
         }
         return campanas.stream()
-                .map(this::toDTO)
+                .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
     
+    /**
+     * PATRÓN MÉTODO PLANTILLA: Implementación específica para Doctor
+     * PATRÓN ADAPTADOR: Adapta entidad Doctor a DoctorDTO
+     */
     private DoctorDTO toDoctorDTO(Doctor doctor) {
         if (doctor == null) {
             return null;
@@ -91,6 +77,10 @@ public class CampanaMapper {
         return dto;
     }
     
+    /**
+     * PATRÓN MÉTODO PLANTILLA: Implementación específica para Empresa
+     * PATRÓN ADAPTADOR: Adapta entidad Empresa a EmpresaDTO
+     */
     private EmpresaDTO toEmpresaDTO(Empresa empresa) {
         if (empresa == null) {
             return null;
@@ -104,6 +94,10 @@ public class CampanaMapper {
         return dto;
     }
     
+    /**
+     * PATRÓN MÉTODO PLANTILLA: Implementación específica para Empleado
+     * PATRÓN ADAPTADOR: Adapta entidad Empleado a EmpleadoDTO
+     */
     private EmpleadoDTO toEmpleadoDTO(Empleado empleado) {
         if (empleado == null) {
             return null;
@@ -118,6 +112,10 @@ public class CampanaMapper {
         return dto;
     }
     
+    /**
+     * PATRÓN MÉTODO PLANTILLA: Implementación específica para ExamenCampana
+     * PATRÓN ADAPTADOR: Adapta entidad ExamenCampana a ExamenCampanaDTO
+     */
     private ExamenCampanaDTO toExamenCampanaDTO(ExamenCampana examen) {
         if (examen == null) {
             return null;
@@ -132,6 +130,10 @@ public class CampanaMapper {
         return dto;
     }
     
+    /**
+     * PATRÓN MÉTODO PLANTILLA: Implementación específica para ResultadoCampana
+     * PATRÓN ADAPTADOR: Adapta entidad ResultadoCampana a ResultadoCampanaDTO
+     */
     private ResultadoCampanaDTO toResultadoCampanaDTO(ResultadoCampana resultado) {
         if (resultado == null) {
             return null;
@@ -144,6 +146,7 @@ public class CampanaMapper {
         dto.setTipo(resultado.getTipo() != null ? resultado.getTipo() : "");
         dto.setObservaciones(resultado.getObservaciones() != null ? resultado.getObservaciones() : "");
         
+        // PATRÓN ADAPTADOR: Adapta relación anidada
         if (resultado.getDoctor() != null) {
             dto.setDoctor(toDoctorDTO(resultado.getDoctor()));
         }
@@ -151,6 +154,10 @@ public class CampanaMapper {
         return dto;
     }
     
+    /**
+     * PATRÓN MÉTODO PLANTILLA: Implementación específica para AccionCampana
+     * PATRÓN ADAPTADOR: Adapta entidad AccionCampana a AccionCampanaDTO
+     */
     private AccionCampanaDTO toAccionCampanaDTO(AccionCampana accion) {
         if (accion == null) {
             return null;
@@ -163,6 +170,7 @@ public class CampanaMapper {
         dto.setTipo(accion.getTipo() != null ? accion.getTipo() : "");
         dto.setObservaciones(accion.getObservaciones() != null ? accion.getObservaciones() : "");
         
+        // PATRÓN ADAPTADOR: Adapta relaciones anidadas
         if (accion.getDoctor() != null) {
             dto.setDoctor(toDoctorDTO(accion.getDoctor()));
         }

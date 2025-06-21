@@ -36,33 +36,41 @@ El proyecto sigue una arquitectura en capas:
 
 ## Patrones de Diseño Implementados
 
-- MVC (Model-View-Controller)
-- DAO (Data Access Object)
-- Observer
-- Factory
-- Strategy (en transiciones de estado)
+Singleton - CacheSingleton.java (ya tenía comentarios)
+Constructor - Campana.java - Constructores para crear instancias
+Adaptador - CampanaMapper.java - Convierte entidades a DTOs
+Decorador - Anotaciones Jackson en entidades y DTOs
+Proxy - CampanaService.java - Cache transparente
+Observador - ExamenCampana.java - Callbacks JPA
+Estrategia - CampanaService.java - Diferentes estrategias de cache
+Método Plantilla - CampanaMapper.java - Algoritmo de mapeo
+Patrón Estado - Estados de campana
+Patron Comando - Operaciones auditadas 
 
-Configuracion Maven 
+
+## Configuracion 
+
+- Configuracion Maven 
     mvn clean install 
 
-Correr el programa 
+- Correr el programa 
     mvn spring-boot:run
 
-Comprobrar la instalacion de Maven  
+- Comprobrar la instalacion de Maven  
     mvn -version 
 
-Ejecutar el programa si compilar Maven 
+- Ejecutar el programa si compilar Maven 
     java -jar target/medigestion-0.0.1-SNAPSHOT.jar
 
-  npm start
+- npm start
     Starts the development server.
 
-  npm run build
+- npm run build
     Bundles the app into static files for production.
 
-  npm test
+- npm test
     Starts the test runner.
 
-  npm run eject
+- npm run eject
     Removes this tool and copies build dependencies, configuration files
     and scripts into the app directory. If you do this, you can’t go back!

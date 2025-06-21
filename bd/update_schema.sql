@@ -63,4 +63,22 @@ CREATE INDEX idx_campanas_empresa ON campanas(empresa_id);
 CREATE INDEX idx_campanas_coordinador ON campanas(coordinador_id);
 CREATE INDEX idx_resultados_campana ON resultados_campana(campana_id);
 CREATE INDEX idx_acciones_campana ON acciones_campana(campana_id);
-CREATE INDEX idx_empleados_empresa ON empleados(empresa_id); 
+CREATE INDEX idx_empleados_empresa ON empleados(empresa_id);
+
+-- Actualización del esquema para agregar campos de auditoría
+-- PATRÓN OBSERVER: Campos para auditoría de cambios
+
+-- Agregar columnas de auditoría a la tabla campana
+ALTER TABLE campanas
+ADD COLUMN fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN fecha_modificacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+-- Crear índice para optimizar consultas por fecha
+CREATE INDEX idx_campanas_fecha_creacion ON campanas(fecha_creacion);
+CREATE INDEX idx_campanas_fecha_modificacion ON campanas(fecha_modificacion);
+
+-- Actualizar registros existentes con fechas por defecto
+UPDATE campanas
+SET fecha_creacion = CURRENT_TIMESTAMP, 
+    fecha_modificacion = CURRENT_TIMESTAMP 
+WHERE fecha_creacion IS NULL OR fecha_modificacion IS NULL; 

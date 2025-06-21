@@ -1,169 +1,183 @@
 package com.medigestion.service;
 
+import com.medigestion.cache.CacheSingleton;
+import com.medigestion.command.CommandExecutor;
+import com.medigestion.command.CrearCampanaCommand;
+import com.medigestion.command.ModificarCampanaCommand;
+import com.medigestion.dto.CampanaResponseDTO;
 import com.medigestion.entity.Campana;
 import com.medigestion.entity.EstadoCampana;
-import com.medigestion.exception.CampanaException;
-import com.medigestion.dao.CampanaDAO;
-import com.medigestion.observer.NotificadorCampana;
-import com.medigestion.factory.CampanaFactory;
+import com.medigestion.mapper.CampanaMapper;
 import com.medigestion.repository.CampanaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.medigestion.state.CampanaState;
+import com.medigestion.state.CampanaStateFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * PATRÓN SERVICIO: Capa de servicio para gestión de campañas
+ * - Funcionalidad: Lógica de negocio para campañas
+ * - Características: Integración de patrones Estado y Comando
+ * - Beneficios: Separación de responsabilidades, reutilización
+ */
 @Slf4j
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class CampanaService {
-    
-    private final CampanaDAO campanaDAO;
-    private final NotificadorCampana notificador;
-    private final CampanaFactory campanaFactory;
+
     private final CampanaRepository campanaRepository;
+    private final CampanaMapper campanaMapper;
+    private final CommandExecutor commandExecutor;
     
-    @Autowired
-    public CampanaService(CampanaDAO campanaDAO, NotificadorCampana notificador, CampanaFactory campanaFactory, CampanaRepository campanaRepository) {
-        this.campanaDAO = campanaDAO;
-        this.notificador = notificador;
-        this.campanaFactory = campanaFactory;
-        this.campanaRepository = campanaRepository;
+    // PATRÓN SINGLETON: Cache para optimización de rendimiento
+    private final CacheSingleton cache = CacheSingleton.INSTANCE;
+
+    /**
+     * PATRÓN COMANDO + ESTADO: Crear campaña usando comandos y validación de estado
+     */
+    @Transactional
+    public CampanaResponseDTO crearCampana(Campana campana, String usuario) {
+        // PATRÓN ESTADO: Validar que se puede crear una nueva campaña
+        CampanaState estadoPendiente = CampanaStateFactory.createState(EstadoCampana.PENDIENTE);
+        estadoPendiente.validarOperacion("crear", campana);
+        
+        // PATRÓN COMANDO: Encapsular la operación de creación
+        CrearCampanaCommand comando = new CrearCampanaCommand(
+            campanaRepository, campana, usuario, LocalDateTime.now()
+        );
+        
+        Campana campanaCreada = commandExecutor.executeCommand(comando);
+        
+        // PATRÓN CACHE: Invalidar cache después de crear
+        cache.remove("campanas");
+        
+        return campanaMapper.toResponseDTO(campanaCreada);
     }
-    
-    public Campana crearCampanaGeneral(String nombre, LocalDate fechaInicio, LocalDate fechaFin, String descripcion) {
-        Campana campana = campanaFactory.crearCampanaGeneral(nombre, fechaInicio, fechaFin, descripcion);
-        return campanaDAO.save(campana);
+
+    /**
+     * PATRÓN COMANDO + ESTADO: Crear campaña usando comandos y validación de estado
+     */
+    @Transactional
+    public CampanaResponseDTO crearCampana(Campana campana) {
+        return crearCampana(campana, "sistema");
     }
-    
-    public Campana crearCampanaExamenesObligatorios(String nombre, LocalDate fechaInicio, LocalDate fechaFin, String descripcion) {
-        Campana campana = campanaFactory.crearCampanaExamenesObligatorios(nombre, fechaInicio, fechaFin, descripcion);
-        return campanaDAO.save(campana);
+
+    /**
+     * PATRÓN COMANDO + ESTADO: Modificar campaña usando comandos y validación de estado
+     */
+    @Transactional
+    public CampanaResponseDTO modificarCampana(Long id, Campana campanaModificada, String usuario) {
+        Campana campanaExistente = campanaRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+        
+        // PATRÓN ESTADO: Validar si se puede modificar según el estado actual
+        CampanaState estadoActual = CampanaStateFactory.createState(campanaExistente.getEstado());
+        estadoActual.validarOperacion("modificar", campanaExistente);
+        
+        // PATRÓN COMANDO: Encapsular la operación de modificación
+        ModificarCampanaCommand comando = new ModificarCampanaCommand(
+            campanaRepository, campanaExistente, campanaModificada, usuario, LocalDateTime.now()
+        );
+        
+        Campana campanaModificadaResult = (Campana) commandExecutor.executeCommand(comando);
+        
+        // PATRÓN CACHE: Invalidar cache después de modificar
+        cache.remove("campanas");
+        cache.remove("campana:" + id);
+        
+        return campanaMapper.toResponseDTO(campanaModificadaResult);
     }
-    
-    public Campana crearCampanaEspecifica(String nombre, LocalDate fechaInicio, LocalDate fechaFin, String descripcion, String tipoExamen) {
-        Campana campana = campanaFactory.crearCampanaEspecifica(nombre, fechaInicio, fechaFin, descripcion, tipoExamen);
-        return campanaDAO.save(campana);
-    }
-    
-    public Campana crearCampanaPromocional(String nombre, LocalDate fechaInicio, LocalDate fechaFin, String descripcion) {
-        Campana campana = campanaFactory.crearCampanaPromocional(nombre, fechaInicio, fechaFin, descripcion);
-        return campanaDAO.save(campana);
-    }
-    
-    public Campana crearCampanaPreventiva(String nombre, LocalDate fechaInicio, LocalDate fechaFin, String descripcion) {
-        Campana campana = campanaFactory.crearCampanaPreventiva(nombre, fechaInicio, fechaFin, descripcion);
-        return campanaDAO.save(campana);
-    }
-    
-    public Campana crearCampanaEducativa(String nombre, LocalDate fechaInicio, LocalDate fechaFin, String descripcion) {
-        Campana campana = campanaFactory.crearCampanaEducativa(nombre, fechaInicio, fechaFin, descripcion);
-        return campanaDAO.save(campana);
-    }
-    
-    public Campana buscarPorId(Long id) {
-        return campanaDAO.findById(id);
-    }
-    
-    public List<Campana> listarTodas() {
-        return campanaDAO.findAll();
-    }
-    
-    public List<Campana> buscarPorEstado(EstadoCampana estado) {
-        return campanaDAO.findByEstado(estado);
-    }
-    
-    public List<Campana> buscarPorNombre(String nombre) {
-        return campanaDAO.findByNombre(nombre);
-    }
-    
-    public List<Campana> buscarPorRangoFechas(LocalDate fechaInicio, LocalDate fechaFin) {
-        return campanaDAO.findByFechaInicioBetween(fechaInicio, fechaFin);
-    }
-    
-    public Campana iniciarCampana(Long id) {
-        Campana campana = buscarPorId(id);
-        if (campana != null && campana.getEstado() == EstadoCampana.PENDIENTE) {
-            campana.setEstado(EstadoCampana.ACTIVA);
-            return campanaDAO.save(campana);
+
+    /**
+     * PATRÓN CACHE + REPOSITORY: Obtener todas las campañas con cache
+     */
+    public List<CampanaResponseDTO> obtenerTodasLasCampanas() {
+        // PATRÓN CACHE: Verificar cache antes de consultar BD
+        @SuppressWarnings("unchecked")
+        List<Campana> campanasCache = (List<Campana>) cache.get("campanas");
+        
+        if (campanasCache != null) {
+            log.info("Retornando campañas desde cache");
+            return campanasCache.stream()
+                .map(campanaMapper::toResponseDTO)
+                .collect(Collectors.toList());
         }
-        return null;
+        
+        // PATRÓN REPOSITORY: Consultar BD si no está en cache
+        List<Campana> campanas = campanaRepository.findAll();
+        
+        // PATRÓN CACHE: Guardar en cache para futuras consultas
+        cache.put("campanas", campanas);
+        
+        return campanas.stream()
+            .map(campanaMapper::toResponseDTO)
+            .collect(Collectors.toList());
     }
-    
-    public Campana finalizarCampana(Long id) {
-        Campana campana = buscarPorId(id);
-        if (campana != null && campana.getEstado() == EstadoCampana.ACTIVA) {
-            campana.setEstado(EstadoCampana.FINALIZADA);
-            return campanaDAO.save(campana);
+
+    /**
+     * PATRÓN CACHE + REPOSITORY: Obtener campaña por ID con cache
+     */
+    public Optional<CampanaResponseDTO> obtenerCampanaPorId(Long id) {
+        // PATRÓN CACHE: Verificar cache antes de consultar BD
+        Campana campanaCache = (Campana) cache.get("campana:" + id);
+        
+        if (campanaCache != null) {
+            log.info("Retornando campaña desde cache para ID: {}", id);
+            return Optional.of(campanaMapper.toResponseDTO(campanaCache));
         }
-        return null;
+        
+        // PATRÓN REPOSITORY: Consultar BD si no está en cache
+        Optional<Campana> campana = campanaRepository.findById(id);
+        
+        // PATRÓN CACHE: Guardar en cache si existe
+        campana.ifPresent(c -> cache.put("campana:" + id, c));
+        
+        return campana.map(campanaMapper::toResponseDTO);
     }
-    
-    public Campana cancelarCampana(Long id) {
-        Campana campana = buscarPorId(id);
-        if (campana != null && (campana.getEstado() == EstadoCampana.PENDIENTE || campana.getEstado() == EstadoCampana.ACTIVA)) {
-            campana.setEstado(EstadoCampana.CANCELADA);
-            return campanaDAO.save(campana);
+
+    /**
+     * PATRÓN COMANDO: Deshacer última operación
+     */
+    public Campana deshacerUltimaOperacion() {
+        return commandExecutor.undoLastCommand();
+    }
+
+    /**
+     * PATRÓN ESTADO: Obtener información del estado de una campaña
+     */
+    public String obtenerInformacionEstado(Long id) {
+        Campana campana = campanaRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+        
+        CampanaState estado = CampanaStateFactory.createState(campana.getEstado());
+        return estado.getMensajeEstado();
+    }
+
+    /**
+     * PATRÓN ESTADO: Validar operación según el estado de la campaña
+     */
+    public boolean validarOperacion(Long id, String operacion) {
+        Campana campana = campanaRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Campaña no encontrada"));
+        
+        CampanaState estado = CampanaStateFactory.createState(campana.getEstado());
+        
+        switch (operacion.toLowerCase()) {
+            case "crear":
+                return estado.puedeCrear();
+            case "modificar":
+                return estado.puedeModificar();
+            case "eliminar":
+                return estado.puedeEliminar();
+            default:
+                return false;
         }
-        return null;
-    }
-    
-    public void eliminarCampana(Long id) {
-        log.info("Eliminando campaña con ID: {}", id);
-        campanaRepository.deleteById(id);
-    }
-    
-    public Campana crearCampana(Campana campana) {
-        log.info("Creando nueva campaña: {}", campana.getNombre());
-        return campanaRepository.save(campana);
-    }
-    
-    public List<Campana> buscarCampanas() {
-        log.info("Buscando todas las campañas");
-        return campanaRepository.findAll();
-    }
-    
-    public Optional<Campana> buscarCampanaPorId(Long id) {
-        log.info("Buscando campaña por ID: {}", id);
-        return campanaRepository.findById(id);
-    }
-    
-    public List<Campana> buscarCampanasPorEstado(EstadoCampana estado) {
-        log.info("Buscando campañas por estado: {}", estado);
-        return campanaRepository.findByEstado(estado);
-    }
-    
-    public List<Campana> buscarCampanasPorTipo(String tipo) {
-        log.info("Buscando campañas por tipo: {}", tipo);
-        return campanaRepository.findByTipo(tipo);
-    }
-    
-    public List<Campana> buscarCampanasPorFechaInicio(LocalDate fechaInicio) {
-        log.info("Buscando campañas por fecha de inicio: {}", fechaInicio);
-        return campanaRepository.findByFechaInicio(fechaInicio);
-    }
-    
-    public List<Campana> buscarCampanasPorFechaFin(LocalDate fechaFin) {
-        log.info("Buscando campañas por fecha de fin: {}", fechaFin);
-        return campanaRepository.findByFechaFin(fechaFin);
-    }
-    
-    public Campana actualizarCampana(Long id, Campana campanaActualizada) {
-        log.info("Actualizando campaña con ID: {}", id);
-        Optional<Campana> campanaExistente = campanaRepository.findById(id);
-        if (campanaExistente.isPresent()) {
-            Campana campana = campanaExistente.get();
-            campana.setNombre(campanaActualizada.getNombre());
-            campana.setDescripcion(campanaActualizada.getDescripcion());
-            campana.setFechaInicio(campanaActualizada.getFechaInicio());
-            campana.setFechaFin(campanaActualizada.getFechaFin());
-            campana.setEstado(campanaActualizada.getEstado());
-            campana.setTipo(campanaActualizada.getTipo());
-            return campanaRepository.save(campana);
-        }
-        return null;
     }
 }

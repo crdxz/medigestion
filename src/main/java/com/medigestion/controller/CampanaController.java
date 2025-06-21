@@ -1,119 +1,162 @@
 package com.medigestion.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.medigestion.dto.CampanaResponseDTO;
+import com.medigestion.entity.Campana;
+import com.medigestion.service.CampanaService;
+import com.medigestion.mapper.CampanaMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.medigestion.service.CampanaService;
-import com.medigestion.dto.CampanaResponseDTO;
-import com.medigestion.dto.CampanaRequestDTO;
-import com.medigestion.entity.Campana;
-import com.medigestion.entity.EstadoCampana;
-import com.medigestion.mapper.CampanaMapper;
-import lombok.extern.slf4j.Slf4j;
-import java.time.LocalDate;
+
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * PATRÓN CONTROLADOR: Controlador REST para gestión de campañas
+ * - Funcionalidad: Endpoints para operaciones CRUD de campañas
+ * - Características: Integración con patrones Estado y Comando
+ * - Beneficios: Separación de responsabilidades, API RESTful
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/campanas")
-@Slf4j
+@RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"}, allowCredentials = "false")
 public class CampanaController {
-    
-    @Autowired
-    private CampanaService campanaService;
-    
-    @Autowired
-    private CampanaMapper campanaMapper;
-    
-    @GetMapping
-    public ResponseEntity<List<CampanaResponseDTO>> obtenerCampanas() {
-        log.info("Obteniendo todas las campañas");
-        List<Campana> campanas = campanaService.buscarCampanas();
-        return ResponseEntity.ok(campanaMapper.toDTOList(campanas));
-    }
-    
-    @GetMapping("/{id}")
-    public ResponseEntity<CampanaResponseDTO> obtenerCampana(@PathVariable Long id) {
-        log.info("Obteniendo campaña con ID: {}", id);
-        Optional<Campana> campana = campanaService.buscarCampanaPorId(id);
-        return campana.map(c -> ResponseEntity.ok(campanaMapper.toDTO(c)))
-                     .orElse(ResponseEntity.notFound().build());
-    }
-    
+
+    private final CampanaService campanaService;
+    private final CampanaMapper campanaMapper;
+
+    /**
+     * PATRÓN COMANDO + ESTADO: Crear campaña con validación de estado
+     */
     @PostMapping
-    public ResponseEntity<CampanaResponseDTO> crearCampana(@RequestBody Campana campana) {
-        log.info("Creando nueva campaña: {}", campana.getNombre());
-        Campana nuevaCampana = campanaService.crearCampana(campana);
-        return ResponseEntity.ok(campanaMapper.toDTO(nuevaCampana));
+    public ResponseEntity<CampanaResponseDTO> crearCampana(
+            @RequestBody Campana campana,
+            @RequestParam(defaultValue = "sistema") String usuario) {
+        
+        log.info("Solicitud para crear campaña: {}", campana.getNombre());
+        
+        try {
+            CampanaResponseDTO campanaCreada = campanaService.crearCampana(campana, usuario);
+            return ResponseEntity.ok(campanaCreada);
+        } catch (Exception e) {
+            log.error("Error al crear campaña: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
     }
-    
+
+    /**
+     * PATRÓN COMANDO + ESTADO: Modificar campaña con validación de estado
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<CampanaResponseDTO> actualizarCampana(@PathVariable Long id, @RequestBody Campana campana) {
-        log.info("Actualizando campaña con ID: {}", id);
-        Campana campanaActualizada = campanaService.actualizarCampana(id, campana);
-        if (campanaActualizada != null) {
-            return ResponseEntity.ok(campanaMapper.toDTO(campanaActualizada));
+    public ResponseEntity<CampanaResponseDTO> modificarCampana(
+            @PathVariable Long id,
+            @RequestBody Campana campanaModificada,
+            @RequestParam(defaultValue = "sistema") String usuario) {
+        
+        log.info("Solicitud para modificar campaña ID: {}", id);
+        
+        try {
+            CampanaResponseDTO campanaModificadaResult = campanaService.modificarCampana(id, campanaModificada, usuario);
+            return ResponseEntity.ok(campanaModificadaResult);
+        } catch (Exception e) {
+            log.error("Error al modificar campaña: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.notFound().build();
     }
-    
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarCampana(@PathVariable Long id) {
-        log.info("Eliminando campaña con ID: {}", id);
-        campanaService.eliminarCampana(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @GetMapping("/estado/{estado}")
-    public ResponseEntity<List<CampanaResponseDTO>> buscarPorEstado(@PathVariable EstadoCampana estado) {
-        log.info("Buscando campañas por estado: {}", estado);
-        List<Campana> campanas = campanaService.buscarCampanasPorEstado(estado);
-        return ResponseEntity.ok(campanaMapper.toDTOList(campanas));
-    }
-    
-    @GetMapping("/tipo/{tipo}")
-    public ResponseEntity<List<CampanaResponseDTO>> buscarPorTipo(@PathVariable String tipo) {
-        log.info("Buscando campañas por tipo: {}", tipo);
-        List<Campana> campanas = campanaService.buscarCampanasPorTipo(tipo);
-        return ResponseEntity.ok(campanaMapper.toDTOList(campanas));
-    }
-    
-    @GetMapping("/fechas")
-    public ResponseEntity<List<CampanaResponseDTO>> buscarPorRangoFechas(
-            @RequestParam LocalDate fechaInicio,
-            @RequestParam LocalDate fechaFin) {
-        log.info("Buscando campañas entre {} y {}", fechaInicio, fechaFin);
-        List<Campana> campanas = campanaService.buscarPorRangoFechas(fechaInicio, fechaFin);
-        return ResponseEntity.ok(campanaMapper.toDTOList(campanas));
-    }
-    
-    @PutMapping("/{id}/iniciar")
-    public ResponseEntity<CampanaResponseDTO> iniciarCampana(@PathVariable Long id) {
-        log.info("Iniciando campaña con ID: {}", id);
-        Campana campana = campanaService.iniciarCampana(id);
-        if (campana != null) {
-            return ResponseEntity.ok(campanaMapper.toDTO(campana));
+
+    /**
+     * PATRÓN CACHE + REPOSITORY: Obtener todas las campañas
+     */
+    @GetMapping
+    public ResponseEntity<List<CampanaResponseDTO>> obtenerTodasLasCampanas() {
+        log.info("Solicitud para obtener todas las campañas");
+        
+        try {
+            List<CampanaResponseDTO> campanas = campanaService.obtenerTodasLasCampanas();
+            return ResponseEntity.ok(campanas);
+        } catch (Exception e) {
+            log.error("Error al obtener campañas: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
-        return ResponseEntity.notFound().build();
     }
-    
-    @PutMapping("/{id}/finalizar")
-    public ResponseEntity<CampanaResponseDTO> finalizarCampana(@PathVariable Long id) {
-        log.info("Finalizando campaña con ID: {}", id);
-        Campana campana = campanaService.finalizarCampana(id);
-        if (campana != null) {
-            return ResponseEntity.ok(campanaMapper.toDTO(campana));
+
+    /**
+     * PATRÓN CACHE + REPOSITORY: Obtener campaña por ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<CampanaResponseDTO> obtenerCampanaPorId(@PathVariable Long id) {
+        log.info("Solicitud para obtener campaña ID: {}", id);
+        
+        try {
+            Optional<CampanaResponseDTO> campana = campanaService.obtenerCampanaPorId(id);
+            return campana.map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            log.error("Error al obtener campaña: {}", e.getMessage());
+            return ResponseEntity.internalServerError().build();
         }
-        return ResponseEntity.notFound().build();
     }
-    
-    @PutMapping("/{id}/cancelar")
-    public ResponseEntity<CampanaResponseDTO> cancelarCampana(@PathVariable Long id) {
-        log.info("Cancelando campaña con ID: {}", id);
-        Campana campana = campanaService.cancelarCampana(id);
-        if (campana != null) {
-            return ResponseEntity.ok(campanaMapper.toDTO(campana));
+
+    /**
+     * PATRÓN COMANDO: Deshacer última operación
+     */
+    @PostMapping("/undo")
+    public ResponseEntity<CampanaResponseDTO> deshacerUltimaOperacion() {
+        log.info("Solicitud para deshacer última operación");
+        
+        try {
+            Campana campana = campanaService.deshacerUltimaOperacion();
+            return ResponseEntity.ok(campanaMapper.toResponseDTO(campana));
+        } catch (Exception e) {
+            log.error("Error al deshacer operación: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.notFound().build();
+    }
+
+    /**
+     * PATRÓN ESTADO: Obtener información del estado de una campaña
+     */
+    @GetMapping("/{id}/estado")
+    public ResponseEntity<String> obtenerInformacionEstado(@PathVariable Long id) {
+        log.info("Solicitud para obtener información de estado de campaña ID: {}", id);
+        
+        try {
+            String informacionEstado = campanaService.obtenerInformacionEstado(id);
+            return ResponseEntity.ok(informacionEstado);
+        } catch (Exception e) {
+            log.error("Error al obtener información de estado: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * PATRÓN ESTADO: Validar si se puede realizar una operación según el estado
+     */
+    @GetMapping("/{id}/validar/{operacion}")
+    public ResponseEntity<Boolean> validarOperacion(
+            @PathVariable Long id,
+            @PathVariable String operacion) {
+        
+        log.info("Solicitud para validar operación '{}' en campaña ID: {}", operacion, id);
+        
+        try {
+            boolean puedeRealizar = campanaService.validarOperacion(id, operacion);
+            return ResponseEntity.ok(puedeRealizar);
+        } catch (Exception e) {
+            log.error("Error al validar operación: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(false);
+        }
+    }
+
+    /**
+     * Endpoint de prueba para verificar que el backend esté funcionando
+     */
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        log.info("Endpoint de prueba llamado");
+        return ResponseEntity.ok("Backend funcionando correctamente");
     }
 } 
